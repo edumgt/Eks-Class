@@ -1,14 +1,14 @@
-# EKS Storage with EBS - Elastic Block Store
+# EBS(Elastic Block Store)로 EKS 스토리지 구성
 
-## Step-01: Introduction
-- Create IAM Policy for EBS
-- Associate IAM Policy to Worker Node IAM Role
-- Install EBS CSI Driver
+## Step-01: 소개
+- EBS용 IAM 정책 생성
+- 워커 노드 IAM 역할에 IAM 정책 연결
+- EBS CSI 드라이버 설치
 
-## Step-02:  Create IAM policyy
-- Go to Services -> IAM
-- Create a Policy 
-  - Select JSON tab and copy paste the below JSON
+## Step-02: IAM 정책 생성
+- Services -> IAM 이동
+- 정책 생성
+  - JSON 탭을 선택하고 아래 JSON을 복사하여 붙여넣기
 ```json
 
 {
@@ -35,36 +35,36 @@
   ]
 }
 ```
-  - Review the same in **Visual Editor** 
-  - Click on **Review Policy**
+  - **Visual Editor**에서 내용 확인
+  - **Review Policy** 클릭
   - **Name:** Amazon_EBS_CSI_Driver
-  - **Description:** Policy for EC2 Instances to access Elastic Block Store
-  - Click on **Create Policy**
+  - **Description:** EC2 인스턴스가 Elastic Block Store에 접근하기 위한 정책
+  - **Create Policy** 클릭
 
-## Step-03: Get the IAM role Worker Nodes using and Associate this policy to that role
+## Step-03: 워커 노드 IAM 역할 확인 및 정책 연결
 ```
-# Get Worker node IAM Role ARN
+# 워커 노드 IAM 역할 ARN 확인
 kubectl -n kube-system describe configmap aws-auth
 
-# from output check rolearn
+# 출력에서 rolearn 확인
 rolearn: arn:aws:iam::180789647333:role/eksctl-eksdemo1-nodegroup-eksdemo-NodeInstanceRole-IJN07ZKXAWNN
 ```
-- Go to Services -> IAM -> Roles 
-- Search for role with name **eksctl-eksdemo1-nodegroup** and open it
-- Click on **Permissions** tab
-- Click on **Attach Policies**
-- Search for **Amazon_EBS_CSI_Driver** and click on **Attach Policy**
+- Services -> IAM -> Roles 이동
+- **eksctl-eksdemo1-nodegroup** 이름의 역할 검색 후 열기
+- **Permissions** 탭 클릭
+- **Attach Policies** 클릭
+- **Amazon_EBS_CSI_Driver**를 검색해 **Attach Policy** 클릭
 
-## Step-04: Deploy Amazon EBS CSI Driver  
-- Verify kubectl version, it should be 1.14 or later
+## Step-04: Amazon EBS CSI 드라이버 배포
+- kubectl 버전이 1.14 이상인지 확인
 ```
 kubectl version --client --short
 ```
-- Deploy Amazon EBS CSI Driver
+- Amazon EBS CSI 드라이버 배포
 ```
-# Deploy EBS CSI Driver
+# EBS CSI 드라이버 배포
 kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
 
-# Verify ebs-csi pods running
+# ebs-csi 파드 실행 확인
 kubectl get pods -n kube-system
 ```

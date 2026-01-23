@@ -1,25 +1,25 @@
-# Deploy UserManagement Service with MySQL Database
+# MySQL 데이터베이스와 함께 UserManagement 서비스 배포
 
 
-## Step-01: Introduction
-- We are going to deploy a **User Management Microservice** which will connect to MySQL Database schema **usermgmt** during startup.
-- Then we can test the following APIs
-  - Create Users
-  - List Users
-  - Delete User
-  - Health Status 
+## Step-01: 소개
+- 시작 시 MySQL 데이터베이스 스키마 **usermgmt**에 연결하는 **User Management 마이크로서비스**를 배포합니다.
+- 다음 API를 테스트할 수 있습니다.
+  - 사용자 생성
+  - 사용자 목록
+  - 사용자 삭제
+  - 상태 점검
 
-| Kubernetes Object  | YAML File |
+| Kubernetes 오브젝트  | YAML 파일 |
 | ------------- | ------------- |
 | Deployment, Environment Variables  | 06-UserManagementMicroservice-Deployment.yml  |
 | NodePort Service  | 07-UserManagement-Service.yml  |
 
-## Step-02: Create following Kubernetes manifests
+## Step-02: 다음 Kubernetes 매니페스트 생성
 
-### Create User Management Microservice Deployment manifest
-- **Environment Variables**
+### User Management 마이크로서비스 Deployment 매니페스트 생성
+- **환경 변수**
 
-| Key Name  | Value |
+| 키 이름  | 값 |
 | ------------- | ------------- |
 | DB_HOSTNAME  | mysql |
 | DB_PORT  | 3306  |
@@ -27,58 +27,58 @@
 | DB_USERNAME  | root  |
 | DB_PASSWORD | dbpassword11  |  
 
-### Create User Management Microservice NodePort Service manifest
-- NodePort Service
+### User Management 마이크로서비스 NodePort Service 매니페스트 생성
+- NodePort 서비스
 
-## Step-03: Create UserManagement Service Deployment & Service 
+## Step-03: UserManagement 서비스 Deployment 및 Service 생성
 ```
-# Create Deployment & NodePort Service
+# Deployment 및 NodePort 서비스 생성
 kubectl apply -f kube-manifests/
 
-# List Pods
+# 파드 목록
 kubectl get pods
 
-# Verify logs of Usermgmt Microservice pod
+# Usermgmt 마이크로서비스 파드 로그 확인
 kubectl logs -f <Pod-Name>
 
-# Verify sc, pvc, pv
+# sc, pvc, pv 확인
 kubectl get sc,pvc,pv
 ```
-- **Problem Observation:** 
-  - If we deploy all manifests at a time, by the time mysql is ready our `User Management Microservice` pod will be restarting multiple times due to unavailability of Database. 
-  - To avoid such situations, we can apply `initContainers` concept to our User management Microservice `Deployment manifest`.
-  - We will see that in our next section but for now lets continue to test the application
-- **Access Application**
+- **문제 관찰:**
+  - 모든 매니페스트를 한 번에 배포하면, mysql이 준비되기 전에 `User Management Microservice` 파드가 DB 미가용으로 여러 번 재시작할 수 있습니다.
+  - 이를 방지하려면 User management 마이크로서비스 `Deployment manifest`에 `initContainers` 개념을 적용할 수 있습니다.
+  - 다음 섹션에서 다루며, 지금은 애플리케이션 테스트를 계속 진행합니다.
+- **애플리케이션 접근**
 ```
-# List Services
+# 서비스 목록
 kubectl get svc
 
-# Get Public IP
+# 퍼블릭 IP 확인
 kubectl get nodes -o wide
 
-# Access Health Status API for User Management Service
+# User Management 서비스 상태 점검 API 접근
 http://<EKS-WorkerNode-Public-IP>:31231/usermgmt/health-status
 ```
 
-## Step-04: Test User Management Microservice using Postman
-### Download Postman client 
-- https://www.postman.com/downloads/ 
-### Import Project to Postman
-- Import the postman project `AWS-EKS-Masterclass-Microservices.postman_collection.json` present in folder `04-03-UserManagement-MicroService-with-MySQLDB`
-### Create Environment in postman
-- Go to Settings -> Click on Add
-- **Environment Name:** UMS-NodePort
-  - **Variable:** url
-  - **Initial Value:** http://WorkerNode-Public-IP:31231
-  - **Current Value:** http://WorkerNode-Public-IP:31231
-  - Click on **Add**
-### Test User Management Services
-- Select the environment before calling any API
+## Step-04: Postman으로 User Management 마이크로서비스 테스트
+### Postman 클라이언트 다운로드
+- https://www.postman.com/downloads/
+### Postman에 프로젝트 가져오기
+- `04-03-UserManagement-MicroService-with-MySQLDB` 폴더에 있는 `AWS-EKS-Masterclass-Microservices.postman_collection.json` 프로젝트를 가져옵니다.
+### Postman에서 환경 생성
+- Settings -> Add 클릭
+- **환경 이름:** UMS-NodePort
+  - **변수:** url
+  - **초기 값:** http://WorkerNode-Public-IP:31231
+  - **현재 값:** http://WorkerNode-Public-IP:31231
+  - **Add** 클릭
+### User Management 서비스 테스트
+- API 호출 전에 환경을 선택합니다.
 - **Health Status API**
   - URL: `{{url}}/usermgmt/health-status`
-- **Create User Service**
+- **Create User 서비스**
   - URL: `{{url}}/usermgmt/user`
-  - `url` variable will replaced from environment we selected
+  - `url` 변수는 선택한 환경 값으로 대체됩니다.
 ```json
     {
         "username": "admin1",
@@ -90,10 +90,10 @@ http://<EKS-WorkerNode-Public-IP>:31231/usermgmt/health-status
         "password": "Pass@123"
     }
 ```
-- **List User Service**
+- **List User 서비스**
   - URL: `{{url}}/usermgmt/users`
 
-- **Update User Service**
+- **Update User 서비스**
   - URL: `{{url}}/usermgmt/user`
 ```json
     {
@@ -106,31 +106,31 @@ http://<EKS-WorkerNode-Public-IP>:31231/usermgmt/health-status
         "password": "Pass@123"
     }
 ```  
-- **Delete User Service**
+- **Delete User 서비스**
   - URL: `{{url}}/usermgmt/user/admin1`
 
-## Step-05: Verify Users in MySQL Database
+## Step-05: MySQL 데이터베이스에서 사용자 확인
 ```
-# Connect to MYSQL Database
+# MySQL 데이터베이스 연결
 kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -u root -pdbpassword11
 
-# Verify usermgmt schema got created which we provided in ConfigMap
+# ConfigMap에 제공한 usermgmt 스키마가 생성되었는지 확인
 mysql> show schemas;
 mysql> use usermgmt;
 mysql> show tables;
 mysql> select * from users;
 ```
 
-## Step-06: Clean-Up
-- Delete all k8s objects created as part of this section
+## Step-06: 정리
+- 이 섹션에서 생성한 모든 k8s 객체 삭제
 ```
-# Delete All
+# 전체 삭제
 kubectl delete -f kube-manifests/
 
-# List Pods
+# 파드 목록
 kubectl get pods
 
-# Verify sc, pvc, pv
+# sc, pvc, pv 확인
 kubectl get sc,pvc,pv
 ```
 

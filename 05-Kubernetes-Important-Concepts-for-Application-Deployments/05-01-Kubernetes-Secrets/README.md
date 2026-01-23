@@ -1,18 +1,18 @@
-# Kubernetes - Secrets
+# Kubernetes - 시크릿(Secrets)
 
-## Step-01: Introduction
-- Kubernetes Secrets let you store and manage sensitive information, such as passwords, OAuth tokens, and ssh keys. 
-- Storing confidential information in a Secret is safer and more flexible than putting it directly in a Pod definition or in a container image. 
+## Step-01: 소개
+- Kubernetes 시크릿은 비밀번호, OAuth 토큰, SSH 키 같은 민감한 정보를 저장/관리합니다.
+- 민감한 정보를 시크릿에 저장하는 것은 파드 정의나 컨테이너 이미지에 직접 넣는 것보다 더 안전하고 유연합니다.
 
-## Step-02: Create Secret for MySQL DB Password
-### 
+## Step-02: MySQL DB 비밀번호용 시크릿 생성
+###
 ```
 # Mac
 echo -n 'dbpassword11' | base64
 
 # URL: https://www.base64encode.org
 ```
-### Create Kubernetes Secrets manifest
+### Kubernetes 시크릿 매니페스트 생성
 ```yml
 apiVersion: v1
 kind: Secret
@@ -25,7 +25,7 @@ data:
   # Output of echo -n 'dbpassword11' | base64
   db-password: ZGJwYXNzd29yZDEx
 ```
-## Step-03: Update secret in MySQL Deployment for DB Password
+## Step-03: MySQL Deployment에 DB 비밀번호 시크릿 적용
 ```yml
           env:
             - name: MYSQL_ROOT_PASSWORD
@@ -35,8 +35,8 @@ data:
                   key: db-password
 ```
 
-## Step-04: Update secret in UMS Deployment
-- UMS means User Management Microservice
+## Step-04: UMS Deployment에 시크릿 적용
+- UMS는 User Management Microservice를 의미합니다.
 ```yml
             - name: DB_PASSWORD
               valueFrom:
@@ -45,27 +45,27 @@ data:
                   key: db-password
 ```
 
-## Step-05: Create & Test
+## Step-05: 생성 및 테스트
 ```
-# Create All Objects
+# 전체 객체 생성
 kubectl apply -f kube-manifests/
 
-# List Pods
+# 파드 목록
 kubectl get pods
 
-# Access Application Health Status Page
+# 애플리케이션 상태 페이지 접근
 http://<WorkerNode-Public-IP>:31231/usermgmt/health-status
 ```
 
-## Step-06: Clean-Up
-- Delete all k8s objects created as part of this section
+## Step-06: 정리
+- 이 섹션에서 생성한 모든 k8s 객체 삭제
 ```
-# Delete All
+# 전체 삭제
 kubectl delete -f kube-manifests/
 
-# List Pods
+# 파드 목록
 kubectl get pods
 
-# Verify sc, pvc, pv
+# sc, pvc, pv 확인
 kubectl get sc,pvc,pv
 ```

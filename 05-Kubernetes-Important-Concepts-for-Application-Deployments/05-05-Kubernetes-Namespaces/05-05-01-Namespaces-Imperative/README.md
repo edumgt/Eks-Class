@@ -1,108 +1,108 @@
-# Kubernetes Namespaces - Imperative using kubectl
+# Kubernetes 네임스페이스 - kubectl 명령형 방식
 
-## Step-01: Introduction
-- Namespaces allow to split-up resources into different groups.
-- Resource names should be unique in a namespace
-- We can use namespaces to create multiple environments like dev, staging and production etc
-- Kubernetes will always list the resources from `default namespace` unless we provide exclusively from which namespace we need information from.
+## Step-01: 소개
+- 네임스페이스는 리소스를 서로 다른 그룹으로 분리할 수 있습니다.
+- 리소스 이름은 네임스페이스 내에서 고유해야 합니다.
+- 네임스페이스를 사용해 dev, staging, production 등 여러 환경을 만들 수 있습니다.
+- Kubernetes는 별도 지정이 없으면 항상 `default namespace`의 리소스를 표시합니다.
 
-## Step-02: Namespaces Generic - Deploy in Dev1 and Dev2
-### Create Namespace
+## Step-02: 네임스페이스 일반 - Dev1과 Dev2에 배포
+### 네임스페이스 생성
 ```
-# List Namespaces
+# 네임스페이스 목록
 kubectl get ns 
 
-# Craete Namespace
+# 네임스페이스 생성
 kubectl create namespace <namespace-name>
 kubectl create namespace dev1
 kubectl create namespace dev2
 
-# List Namespaces
+# 네임스페이스 목록
 kubectl get ns 
 ```
-### Comment NodePort in UserMgmt NodePort Service
-- **File: 07-UserManagement-Service.yml**
-- **Why?:**
-  - Whenever we create with same manifests multiple environments like dev1, dev2 with namespaces, we cannot have same worker node port for multiple services. 
-  - We will have port conflict. 
-  - Its good for k8s system to provide dynamic nodeport for us in such situations.
+### UserMgmt NodePort 서비스에서 NodePort 주석 처리
+- **파일:** 07-UserManagement-Service.yml
+- **이유:**
+  - 네임스페이스로 dev1, dev2 등 여러 환경을 동일한 매니페스트로 생성할 때 동일한 워커 노드 포트를 사용할 수 없습니다.
+  - 포트 충돌이 발생합니다.
+  - 이런 경우 k8s가 동적 nodeport를 할당하도록 두는 것이 좋습니다.
 ```yml
       #nodePort: 31231
 ```
-- **Error** if not commented
+- 주석 처리하지 않을 경우 **오류**
 ```log
 The Service "usermgmt-restapp-service" is invalid: spec.ports[0].nodePort: Invalid value: 31231: provided port is already allocated
 ```
-### Deploy All k8s Objects
+### 모든 k8s 객체 배포
 ```
-# Deploy All k8s Objects
+# 모든 k8s 객체 배포
 kubectl apply -f kube-manifests/ -n dev1
 kubectl apply -f kube-manifests/ -n dev2
 
-# List all objects from dev1 & dev2 Namespaces
+# dev1 및 dev2 네임스페이스의 모든 객체 목록
 kubectl get all -n dev1
 kubectl get all -n dev2
 ```
-## Step-03: Verify SC,PVC and PV
-- **Shorter Note**
-  - PVC is a namespace specific resource
-  - PV and SC are generic
-- **Observation-1:** `Persistent Volume Claim (PVC)` gets created in respective namespaces
+## Step-03: SC, PVC, PV 확인
+- **짧은 메모**
+  - PVC는 네임스페이스 전용 리소스
+  - PV와 SC는 공용 리소스
+- **관찰-1:** `Persistent Volume Claim(PVC)`은 해당 네임스페이스에 생성됩니다.
 ```
-# List PVC for dev1 and dev2
+# dev1과 dev2의 PVC 목록
 kubectl get pvc -n dev1
 kubectl get pvc -n dev2
 ```
-- **Observation-2:** `Storage Class (SC) and Persistent Volume (PV)` gets created generic. No specifc namespace for them   
+- **관찰-2:** `Storage Class(SC)와 Persistent Volume(PV)`은 공용으로 생성되며 네임스페이스가 없습니다.
 ```
-# List sc,pv
+# sc, pv 목록
 kubect get sc,pv
 ```
-## Step-04: Access Application
-### Dev1 Namespace
+## Step-04: 애플리케이션 접근
+### Dev1 네임스페이스
 ```
-# Get Public IP
+# 퍼블릭 IP 확인
 kubectl get nodes -o wide
 
-# Get NodePort for dev1 usermgmt service
+# dev1 usermgmt 서비스 NodePort 확인
 kubectl get svc -n dev1
 
-# Access Application
+# 애플리케이션 접근
 http://<Worker-Node-Public-Ip>:<Dev1-NodePort>/usermgmt/health-stauts
 ```
-### Dev2 Namespace
+### Dev2 네임스페이스
 ```
-# Get Public IP
+# 퍼블릭 IP 확인
 kubectl get nodes -o wide
 
-# Get NodePort for dev2 usermgmt service
+# dev2 usermgmt 서비스 NodePort 확인
 kubectl get svc -n dev2
 
-# Access Application
+# 애플리케이션 접근
 http://<Worker-Node-Public-Ip>:<Dev2-NodePort>/usermgmt/health-stauts
 ```
-## Step-05: Clean-Up
+## Step-05: 정리
 ```
-# Delete namespaces dev1 & dev2
+# dev1 및 dev2 네임스페이스 삭제
 kubectl delete ns dev1
 kubectl delete ns dev2
 
-# List all objects from dev1 & dev2 Namespaces
+# dev1 및 dev2 네임스페이스의 모든 객체 목록
 kubectl get all -n dev1
 kubectl get all -n dev2
 
-# List Namespaces
+# 네임스페이스 목록
 kubectl get ns
 
-# List sc,pv
+# sc, pv 목록
 kubectl get sc,pv
 
-# Delete Storage Class
+# Storage Class 삭제
 kubectl delete sc ebs-sc
 
-# Get all from All Namespaces
+# 모든 네임스페이스에서 모든 객체 확인
 kubectl get all -all-namespaces
 ```
 
-## References:
+## 참고 자료
 - https://kubernetes.io/docs/tasks/administer-cluster/namespaces-walkthrough/
