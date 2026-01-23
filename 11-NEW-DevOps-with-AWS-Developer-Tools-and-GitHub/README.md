@@ -1,3 +1,14 @@
+# AWS EKS에서 AWS Developer Tools로 DevOps
+
+## 요약 번역
+- 이 문서는 AWS Developer Tools(GitHub, CodeBuild, CodePipeline)로 EKS 배포 파이프라인을 구성하는 방법을 단계별로 설명합니다.
+- ECR 생성, GitHub 저장소 준비, buildspec 작성, CodeBuild/CodePipeline 설정, 배포 검증까지의 흐름을 제공합니다.
+- 아래에 원문(영문)을 그대로 보존하여 참고할 수 있도록 했습니다.
+
+---
+
+## 원문 (English)
+
 # DevOps with AWS Developer Tools on AWS EKS
 
 ## Step-01: Introduction to DevOps

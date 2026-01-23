@@ -1,77 +1,77 @@
-# Microservices Deployment on EKS
+# EKS에서 마이크로서비스 배포
 
-## Step-00: What are Microservices?
-- Understand what are microservices on  a very high level
+## Step-00: 마이크로서비스란?
+- 마이크로서비스에 대해 매우 높은 수준에서 이해합니다.
 
-## Step-01: What are we going to learn in this section?
-- We are going to deploy two microservices.
-    - User Management Service
-    - Notification Service
+## Step-01: 이 섹션에서 무엇을 배우나요?
+- 두 개의 마이크로서비스를 배포합니다.
+    - 사용자 관리 서비스
+    - 알림 서비스
 
-### Usecase Description
-- User Management **Create User API**  will call Notification service **Send Notification API** to send an email to user when we create a user. 
+### 사용 사례 설명
+- 사용자 관리 **Create User API**가 알림 서비스 **Send Notification API**를 호출하여 사용자를 생성할 때 이메일을 전송합니다.
 
 
-### List of Docker Images used in this section
-| Application Name                 | Docker Image Name                          |
+### 이 섹션에서 사용하는 Docker 이미지 목록
+| 애플리케이션 이름                 | Docker 이미지 이름                          |
 | ------------------------------- | --------------------------------------------- |
-| User Management Microservice | stacksimplify/kube-usermanagement-microservice:1.0.0 |
-| Notifications Microservice V1 | stacksimplify/kube-notifications-microservice:1.0.0 |
-| Notifications Microservice V2 | stacksimplify/kube-notifications-microservice:2.0.0 |
+| 사용자 관리 마이크로서비스 | stacksimplify/kube-usermanagement-microservice:1.0.0 |
+| 알림 마이크로서비스 V1 | stacksimplify/kube-notifications-microservice:1.0.0 |
+| 알림 마이크로서비스 V2 | stacksimplify/kube-notifications-microservice:2.0.0 |
 
-## Step-02: Pre-requisite -1: AWS RDS Database, ALB Ingress Controller & External DNS
+## Step-02: 사전 준비 -1: AWS RDS Database, ALB Ingress Controller & External DNS
 
 ### AWS RDS Database
-- We have created AWS RDS Database as part of section [06-EKS-Storage-with-RDS-Database](/06-EKS-Storage-with-RDS-Database/README.md)
-- We even created a `externalName service: 01-MySQL-externalName-Service.yml` in our Kubernetes manifests to point to that RDS Database. 
+- [06-EKS-Storage-with-RDS-Database](/06-EKS-Storage-with-RDS-Database/README.md) 섹션에서 AWS RDS Database를 생성했습니다.
+- RDS Database를 가리키는 `externalName service: 01-MySQL-externalName-Service.yml`도 이미 생성했습니다.
 
 ### ALB Ingress Controller & External DNS
-- We are going to deploy a application which will also have a `ALB Ingress Service` and also will register its DNS name in Route53 using `External DNS`
-- Which means we should have both related pods running in our EKS cluster. 
-- We have installed **ALB Ingress Controller** as part of section [08-01-ALB-Ingress-Install](/08-ELB-Application-LoadBalancers/08-01-ALB-Ingress-Install/README.md)
-- We have installed **External DNS** as part of section [08-06-01-Deploy-ExternalDNS-on-EKS](/08-ELB-Application-LoadBalancers/08-06-ALB-Ingress-ExternalDNS/08-06-01-Deploy-ExternalDNS-on-EKS/README.md)
+- `ALB Ingress Service`와 `External DNS`가 포함된 애플리케이션을 배포합니다.
+- 따라서 EKS 클러스터에 관련 Pod가 실행 중이어야 합니다.
+- [08-01-ALB-Ingress-Install](/08-ELB-Application-LoadBalancers/08-01-ALB-Ingress-Install/README.md) 섹션에서 **ALB Ingress Controller**를 설치했습니다.
+- [08-06-01-Deploy-ExternalDNS-on-EKS](/08-ELB-Application-LoadBalancers/08-06-ALB-Ingress-ExternalDNS/08-06-01-Deploy-ExternalDNS-on-EKS/README.md) 섹션에서 **External DNS**를 설치했습니다.
 ```
-# Verify alb-ingress-controller pod running in namespace kube-system
+# kube-system 네임스페이스의 alb-ingress-controller Pod 확인
 kubectl get pods -n kube-system
 
-# Verify external-dns pod running in default namespace
+# default 네임스페이스의 external-dns Pod 확인
 kubectl get pods
 ```
 
 
-## Step-03: Pre-requisite-2: Create Simple Email Service - SES SMTP Credentials
-### SMTP Credentials
-- Go to Services -> Simple Email Service
+## Step-03: 사전 준비-2: SES SMTP 자격 증명 생성
+### SMTP 자격 증명
+- Services -> Simple Email Service 이동
 - SMTP Settings --> Create My SMTP Credentials
-- **IAM User Name:** append the default generated name with microservice or something so we have a reference of this IAM user created for our ECS Microservice deployment
-- Download the credentials and update the same for below environment variables which you are going to provide in kubernetes manifest `04-NotificationMicroservice-Deployment.yml`
+- **IAM User Name:** 기본 생성된 이름에 microservice 등 식별용 접미사를 붙입니다.
+- 자격 증명을 다운로드하고 아래 환경 변수를 `04-NotificationMicroservice-Deployment.yml`에 설정합니다.
 ```
 AWS_MAIL_SERVER_HOST=email-smtp.us-east-1.amazonaws.com
 AWS_MAIL_SERVER_USERNAME=****
 AWS_MAIL_SERVER_PASSWORD=***
 AWS_MAIL_SERVER_FROM_ADDRESS= use-a-valid-email@gmail.com 
 ```
-- **Important Note:** Environment variable AWS_MAIL_SERVER_FROM_ADDRESS value should be a **valid** email address and also verified in SES. 
+- **중요:** AWS_MAIL_SERVER_FROM_ADDRESS는 **유효한** 이메일 주소이며 SES에서 검증되어야 합니다.
 
-### Verfiy Email Addresses to which notifications we need to send.
-- We need two email addresses for testing Notification Service.  
+### 알림을 받을 이메일 주소 확인
+- 알림 서비스 테스트를 위해 두 개의 이메일 주소가 필요합니다.
 -  **Email Addresses**
-    - Verify a New Email Address
-    - Email Address Verification Request will be sent to that address, click on link to verify your email. 
-    - **From Address:** stacksimplify@gmail.com (replace with your ids during verification)
-    - **To Address:** dkalyanreddy@gmail.com (replace with your ids during verification)
-- **Important Note:** We need to ensure all the emails (FromAddress email) and (ToAddress emails) to be verified here. 
-    - Reference Link: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses.html    
-- Environment Variables
+    - 새 이메일 주소 검증
+    - 검증 요청 이메일이 발송되며, 링크를 클릭해 검증 완료
+    - **From Address:** stacksimplify@gmail.com (본인 이메일로 대체)
+    - **To Address:** dkalyanreddy@gmail.com (본인 이메일로 대체)
+- **중요:** FromAddress와 ToAddress 모두 SES에서 검증되어야 합니다.
+    - 참고 링크: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses.html    
+- 환경 변수
     - AWS_MAIL_SERVER_HOST=email-smtp.us-east-1.amazonaws.com
     - AWS_MAIL_SERVER_USERNAME=*****
     - AWS_MAIL_SERVER_PASSWORD=*****
     - AWS_MAIL_SERVER_FROM_ADDRESS=stacksimplify@gmail.com
 
 
-## Step-04: Create Notification Microservice Deployment Manifest
-- Update environment Variables for Notification Microservice
-- **Notification Microservice Deployment**
+## Step-04: 알림 마이크로서비스 Deployment 매니페스트 생성
+- 알림 마이크로서비스의 환경 변수를 업데이트합니다.
+- **알림 마이크로서비스 Deployment**
 ```yml
           - name: AWS_MAIL_SERVER_HOST
             value: "smtp-service"
@@ -83,7 +83,7 @@ AWS_MAIL_SERVER_FROM_ADDRESS= use-a-valid-email@gmail.com
             value: "stacksimplify@gmail.com"
 ```
 
-## Step-05: Create Notification Microservice SMTP ExternalName Service
+## Step-05: 알림 마이크로서비스 SMTP ExternalName 서비스 생성
 ```yml
 apiVersion: v1
 kind: Service
@@ -94,7 +94,7 @@ spec:
   externalName: email-smtp.us-east-1.amazonaws.com
 ```
 
-## Step-06: Create Notification Microservice NodePort Service
+## Step-06: 알림 마이크로서비스 NodePort 서비스 생성
 ```yml
 apiVersion: v1
 kind: Service
@@ -110,20 +110,20 @@ spec:
   - port: 8096
     targetPort: 8096
 ```
-## Step-07: Update User Management Microservice Deployment Manifest with Notification Service Environment Variables. 
-- User Management Service new environment varibales related to Notification Microservice in addition to already which were configured related to MySQL
-- Update in `02-UserManagementMicroservice-Deployment.yml`
+## Step-07: 사용자 관리 마이크로서비스 Deployment 매니페스트에 알림 서비스 환경 변수 추가
+- MySQL 관련 환경 변수에 더해 알림 서비스 관련 환경 변수를 추가합니다.
+- `02-UserManagementMicroservice-Deployment.yml` 업데이트
 ```yml
           - name: NOTIFICATION_SERVICE_HOST
             value: "notification-clusterip-service"
           - name: NOTIFICATION_SERVICE_PORT
             value: "8096"    
 ```
-## Step-08: Update ALB Ingress Service Kubernetes Manifest
-- Update Ingress Service to ensure only target it is going to have is User Management Service
-- Remove /app1, /app2 contexts
+## Step-08: ALB Ingress Service 매니페스트 업데이트
+- Ingress Service에서 User Management Service만 대상으로 하도록 업데이트합니다.
+- /app1, /app2 컨텍스트 제거
 ```yml
-    # External DNS - For creating a Record Set in Route53
+    # External DNS - Route53에 레코드 셋 생성
     external-dns.alpha.kubernetes.io/hostname: services.kubeoncloud.com, ums.kubeoncloud.com
 spec:
   rules:
@@ -139,127 +139,61 @@ spec:
               servicePort: 8095              
 ```
 
-## Step-09: Deploy Microservices manifests
+## Step-09: 마이크로서비스 매니페스트 배포
 ```
-# Deploy Microservices manifests
+# 마이크로서비스 매니페스트 배포
 kubectl apply -f V1-Microservices/
 ```
 
-## Step-10: Verify the Deployment using kubectl
+## Step-10: kubectl로 배포 확인
 ```
-# List Pods
+# Pods 목록
 kubectl get pods
 
-# User Management Microservice Logs
+# 사용자 관리 마이크로서비스 로그
 kubectl logs -f $(kubectl get po | egrep -o 'usermgmt-microservice-[A-Za-z0-9-]+')
 
-# Notification Microservice Logs
+# 알림 마이크로서비스 로그
 kubectl logs -f $(kubectl get po | egrep -o 'notification-microservice-[A-Za-z0-9-]+')
 
-# External DNS Logs
+# External DNS 로그
 kubectl logs -f $(kubectl get po | egrep -o 'external-dns-[A-Za-z0-9-]+')
 
-# List Ingress
+# Ingress 목록
 kubectl get ingress
 ```
 
-## Step-11: Verify Microservices health-status via browser
+## Step-11: 브라우저에서 마이크로서비스 health-status 확인
 ```
-# User Management Service Health-Status
+# 사용자 관리 서비스 Health-Status
 https://services.kubeoncloud.com/usermgmt/health-status
 
-# Notification Microservice Health-Status via User Management
+# 사용자 관리 서비스 경유 알림 서비스 Health-Status
 https://services.kubeoncloud.com/usermgmt/notification-health-status
 https://services.kubeoncloud.com/usermgmt/notification-service-info
 ```
 
-## Step-12: Import postman project to Postman client on our desktop. 
-- Import postman project
-- Add environment url 
-    - https://services.kubeoncloud.com (**Replace with your ALB DNS registered url on your environment**)
+## Step-12: Postman 클라이언트에 프로젝트 가져오기
+- Postman 프로젝트를 Import
+- 환경 URL 추가
+    - https://services.kubeoncloud.com (**환경에 맞는 ALB DNS로 대체**)
 
-## Step-13: Test both Microservices using Postman
-### User Management Service
+## Step-13: Postman으로 두 마이크로서비스 테스트
+### 사용자 관리 서비스
 - **Create User**
-    - Verify the email id to confirm account creation email received.
+    - 계정 생성 이메일 수신 여부 확인
 - **List User**   
-    - Verify if newly created user got listed. 
+    - 새로 생성된 사용자가 목록에 표시되는지 확인
     
 
 
-## Step-14: Rollout New Deployment - Set Image Option
+## Step-14: 롤아웃 새 배포 - Set Image
 ```
-# Rollout New Deployment using Set Image
+# Set Image로 새 배포 롤아웃
 kubectl set image deployment/notification-microservice notification-service=stacksimplify/kube-notifications-microservice:2.0.0 --record=true
 
-# Verify Rollout Status
+# 롤아웃 상태 확인
 kubectl rollout status deployment/notification-microservice
 
-# Verify ReplicaSets
+# ReplicaSets 확인
 kubectl get rs
-
-# Verify Rollout History
-kubectl rollout history deployment/notification-microservice
-
-# Access Application (Should see V2)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-
-# Roll back to Previous Version
-kubectl rollout undo deployment/notification-microservice
-
-# Access Application (Should see V1)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-```    
-
-## Step-15: Rollout New Deployment - kubectl Edit
-```
-# Rollout New Deployment using kubectl edit, change image version to 2.0.0
-kubectl edit deployment/notification-microservice
-
-# Verify Rollout Status
-kubectl rollout status deployment/notification-microservice
-
-# Verify ReplicaSets
-kubectl get rs
-
-# Verify Rollout History
-kubectl rollout history deployment/notification-microservice
-
-# Access Application (Should see V2)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-
-# Roll back to Previous Version
-kubectl rollout undo deployment/notification-microservice
-
-# Access Application (Should see V1)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-```
-
-## Step-16: Rollout New Deployment - Update manifest & kubectl apply
-```
-# Rollout New Deployment by updating yaml manifest 2.0.0
-kubectl apply -f kube-manifests/
-
-# Verify Rollout Status
-kubectl rollout status deployment/notification-microservice
-
-# Verify ReplicaSets
-kubectl get rs
-
-# Verify Rollout History
-kubectl rollout history deployment/notification-microservice
-
-# Access Application (Should see V2)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-
-# Roll back to Previous Version
-kubectl rollout undo deployment/notification-microservice
-
-# Access Application (Should see V1)
-https://services.kubeoncloud.com/usermgmt/notification-health-status
-```
-
-## Step-17: Clean-up
-```
-kubectl delete -f kube-manifests/    
-```

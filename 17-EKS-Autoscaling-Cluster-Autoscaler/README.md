@@ -1,46 +1,45 @@
-# EKS - Cluster Autoscaler
+# EKS - 클러스터 오토스케일러
 
-## Step-01: Introduction
-- The Kubernetes Cluster Autoscaler automatically adjusts the number of nodes in your cluster when pods fail to launch due to lack of resources or when nodes in the cluster are underutilized and their pods can be rescheduled onto other nodes in the cluster.
+## Step-01: 소개
+- Kubernetes Cluster Autoscaler는 리소스 부족으로 Pod가 실행되지 않거나, 노드가 충분히 여유로워 Pod를 다른 노드로 옮길 수 있을 때 클러스터 노드 수를 자동으로 조정합니다.
 
-## Step-02: Verify if our NodeGroup as --asg-access
-- We need to ensure that we have a parameter named `--asg-access` present during the cluster or nodegroup creation.
-- Verify the same when we created our cluster node group
+## Step-02: NodeGroup에 --asg-access가 있는지 확인
+- 클러스터 또는 노드 그룹 생성 시 `--asg-access` 파라미터가 포함되어 있는지 확인합니다.
+- 클러스터 노드 그룹을 생성할 때 설정한 내용 확인
 
-### What will happen if we use --asg-access tag?
-- It enables IAM policy for cluster-autoscaler
-- Lets review our nodegroup IAM role for the same. 
-- Go to Services -> IAM -> Roles -> eksctl-eksdemo1-nodegroup-XXXXXX
-- Click on **Permissions** tab
-- You should see a inline policy named `eksctl-eksdemo1-nodegroup-eksdemo1-ng-private1-PolicyAutoScaling` in the list of policies associated to this role.
+### --asg-access 태그를 사용하면?
+- cluster-autoscaler용 IAM 정책이 활성화됩니다.
+- 노드 그룹 IAM 역할에서 해당 정책이 있는지 확인합니다.
+- Services -> IAM -> Roles -> eksctl-eksdemo1-nodegroup-XXXXXX 이동
+- **Permissions** 탭에서 `eksctl-eksdemo1-nodegroup-eksdemo1-ng-private1-PolicyAutoScaling` 인라인 정책이 있어야 합니다.
 
-## Step-03: Deploy Cluster Autoscaler
+## Step-03: Cluster Autoscaler 배포
 ```
-# Deploy the Cluster Autoscaler to your cluster
+# 클러스터에 Cluster Autoscaler 배포
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
 
-# Add the cluster-autoscaler.kubernetes.io/safe-to-evict annotation to the deployment
+# cluster-autoscaler.kubernetes.io/safe-to-evict 어노테이션 추가
 kubectl -n kube-system annotate deployment.apps/cluster-autoscaler cluster-autoscaler.kubernetes.io/safe-to-evict="false"
 ```
-## Step-04: Edit Cluster Autoscaler Deployment to add Cluster name and two more parameters
+## Step-04: Cluster Autoscaler Deployment 편집 (클러스터 이름 및 파라미터 추가)
 ```
 kubectl -n kube-system edit deployment.apps/cluster-autoscaler
 ```
-- **Add cluster name**
+- **클러스터 이름 추가**
 ```yml
-# Before Change
+# 변경 전
         - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>
 
-# After Change
+# 변경 후
         - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/eksdemo1
 ```
 
-- **Add two more parameters**
+- **파라미터 2개 추가**
 ```yml
         - --balance-similar-node-groups
         - --skip-nodes-with-system-pods=false
 ```
-- **Sample for reference**
+- **참고 예시**
 ```yml
     spec:
       containers:
@@ -56,25 +55,25 @@ kubectl -n kube-system edit deployment.apps/cluster-autoscaler
         - --skip-nodes-with-system-pods=false
 ```
 
-## Step-05: Set the Cluster Autoscaler Image related to our current EKS Cluster version
-- Open https://github.com/kubernetes/autoscaler/releases
-- Find our release version (example: 1.16.n) and update the same. 
-- Our Cluster version is 1.16 and our cluster autoscaler version is 1.16.5 as per above releases link 
+## Step-05: 현재 EKS 클러스터 버전에 맞는 Cluster Autoscaler 이미지 설정
+- https://github.com/kubernetes/autoscaler/releases 를 확인합니다.
+- 클러스터 버전에 맞는 릴리스 버전을 찾아 업데이트합니다.
+- 예: 클러스터 버전이 1.16이면 Cluster Autoscaler 버전은 1.16.5
 ```
-# Template
-# Update Cluster Autoscaler Image Version
+# 템플릿
+# Cluster Autoscaler 이미지 버전 업데이트
 kubectl -n kube-system set image deployment.apps/cluster-autoscaler cluster-autoscaler=us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.XY.Z
 
 
-# Update Cluster Autoscaler Image Version
+# Cluster Autoscaler 이미지 버전 업데이트
 kubectl -n kube-system set image deployment.apps/cluster-autoscaler cluster-autoscaler=us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.16.5
 ```
 
-## Step-06: Verify Image version got updated
+## Step-06: 이미지 버전 업데이트 확인
 ```
 kubectl -n kube-system get deployment.apps/cluster-autoscaler -o yaml
 ```
-- **Sample partial output**
+- **샘플 일부 출력**
 ```yml
     spec:
       containers:
@@ -91,11 +90,11 @@ kubectl -n kube-system get deployment.apps/cluster-autoscaler -o yaml
         image: us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler:v1.16.5
 ```
 
-## Step-07: View Cluster Autoscaler logs to verify that it is monitoring your cluster load.
+## Step-07: Cluster Autoscaler 로그 확인
 ```
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
-- Sample log reference
+- 샘플 로그 참고
 ```log
 I0607 09:14:37.793323       1 pre_filtering_processor.go:66] Skipping ip-192-168-60-30.ec2.internal - node group min size reached
 I0607 09:14:37.793332       1 pre_filtering_processor.go:66] Skipping ip-192-168-27-213.ec2.internal - node group min size reached
@@ -114,43 +113,43 @@ I0607 09:14:47.804460       1 static_autoscaler.go:440] Scale down status: unnee
 
 ```
 
-## Step-08: Deploy simple Application
+## Step-08: 간단한 애플리케이션 배포
 ```
-# Deploy Application
+# 애플리케이션 배포
 kubectl apply -f kube-manifests/
 ```
 
-## Step-09: Cluster Scale UP: Scale our application to 30 pods
-- In 2 to 3 minutes, one after the other new nodes will added and pods will be scheduled on them. 
-- Our max number of nodes will be 4 which we provided during nodegroup creation.
+## Step-09: 클러스터 스케일 업: 애플리케이션을 30개 Pod로 확장
+- 2~3분 내에 새 노드가 순차적으로 추가되고, Pod가 그 노드에 스케줄링됩니다.
+- 최대 노드 수는 노드 그룹 생성 시 지정한 4개입니다.
 ```
-# Terminal - 1: Keep monitoring cluster autoscaler logs
+# 터미널 1: Cluster Autoscaler 로그 모니터링
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 
-# Terminal - 2: Scale UP the demo application to 30 pods
+# 터미널 2: 데모 애플리케이션을 30개 Pod로 확장
 kubectl get pods
 kubectl get nodes 
 kubectl scale --replicas=30 deploy ca-demo-deployment 
 kubectl get pods
 
-# Terminal - 2: Verify nodes
+# 터미널 2: 노드 확인
 kubectl get nodes -o wide
 ```
-## Step-10: Cluster Scale DOWN: Scale our application to 1 pod
-- It might take 5 to 20 minutes to cool down and come down to minimum nodes which will be 2 which we configured during nodegroup creation
+## Step-10: 클러스터 스케일 다운: 애플리케이션을 1개 Pod로 축소
+- 쿨다운으로 인해 5~20분 정도 소요될 수 있으며, 노드 그룹 생성 시 설정한 최소 노드 수(2개)까지 줄어듭니다.
 ```
-# Terminal - 1: Keep monitoring cluster autoscaler logs
+# 터미널 1: Cluster Autoscaler 로그 모니터링
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 
-# Terminal - 2: Scale down the demo application to 1 pod
+# 터미널 2: 데모 애플리케이션을 1개 Pod로 축소
 kubectl scale --replicas=1 deploy ca-demo-deployment 
 
-# Terminal - 2: Verify nodes
+# 터미널 2: 노드 확인
 kubectl get nodes -o wide
 ```
 
-## Step-11: Clean-Up
-- We will leave cluster autoscaler and undeploy only application
+## Step-11: 정리
+- Cluster Autoscaler는 그대로 두고 애플리케이션만 제거합니다.
 ```
 kubectl delete -f kube-manifests/
 ```

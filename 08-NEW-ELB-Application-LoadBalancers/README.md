@@ -1,39 +1,39 @@
-# Load Balancing workloads on EKS using AWS Application Load Balancer
+# AWS Application Load Balancer로 EKS 워크로드 로드 밸런싱
 
-## Topics
-- We will be looking in to this topic very extensively in a step by step and module by module model. 
-- The below will be the list of topics covered as part of AWS ALB Ingress Perspective. 
+## 주제
+- 이 주제는 단계별/모듈별로 매우 상세하게 다룹니다.
+- 아래는 AWS ALB Ingress 관점에서 다루는 주제 목록입니다.
 
 
-| S.No  | Topic Name |
+| 번호  | 주제 이름 |
 | ------------- | ------------- |
-| 1.  | AWS Load Balancer Controller Installation  |
-| 2.  | ALB Ingress Basics  |
-| 3.  | ALB Ingress Context Path based Routing  |
+| 1.  | AWS Load Balancer Controller 설치  |
+| 2.  | ALB Ingress 기본  |
+| 3.  | ALB Ingress 컨텍스트 경로 기반 라우팅  |
 | 4.  | ALB Ingress SSL  |
-| 5.  | ALB Ingress SSL Redirect (HTTP to HTTPS) |
+| 5.  | ALB Ingress SSL 리다이렉트 (HTTP -> HTTPS) |
 | 6.  | ALB Ingress External DNS |
-| 7.  | ALB Ingress External DNS for k8s Ingress |
-| 8.  | ALB Ingress External DNS for k8s Service |
-| 9.  | ALB Ingress Name based Virtual Host Routing |
+| 7.  | k8s Ingress를 위한 ALB Ingress External DNS |
+| 8.  | k8s Service를 위한 ALB Ingress External DNS |
+| 9.  | ALB Ingress 이름 기반 가상 호스트 라우팅 |
 | 10. | ALB Ingress SSL Discovery - Host |
 | 11. | ALB Ingress SSL Discovery - TLS |
-| 12. | ALB Ingress Groups |
-| 13. | ALB Ingress Target Type - IP Mode |
-| 13. | ALB Ingress Internal Load Balancer |
+| 12. | ALB Ingress 그룹 |
+| 13. | ALB Ingress 대상 유형 - IP 모드 |
+| 13. | ALB Ingress 내부 로드 밸런서 |
 
 
-## References: 
-- Good to refer all the below for additional understanding.
+## 참고 자료: 
+- 추가 이해를 위해 아래 자료를 참고하세요.
 
 ### AWS Load Balancer Controller
-- [AWS Load Balancer Controller Documentation](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/)
+- [AWS Load Balancer Controller 문서](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/)
 
 
-### AWS ALB Ingress Annotations Reference
+### AWS ALB Ingress 어노테이션 참고
 - https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/ingress/annotations/
 
-### eksctl getting started
+### eksctl 시작하기
 - https://eksctl.io/introduction/#getting-started
 
 ### External DNS
