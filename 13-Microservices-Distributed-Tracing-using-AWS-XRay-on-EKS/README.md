@@ -4,6 +4,195 @@
 ### AWS X-Ray & k8s DaemonSets 소개
 - AWS X-Ray 서비스 이해
 - Kubernetes DaemonSets 이해
+
+---
+
+# Kubernetes DaemonSet 이해 (정리)
+
+DaemonSet(데몬셋)은 **클러스터의 모든 노드(또는 조건에 맞는 일부 노드)** 에 **같은 Pod를 1개씩** 항상 실행되도록 보장하는 Kubernetes 워크로드 컨트롤러다.  
+노드가 추가되면 해당 노드에 Pod가 자동으로 생성되고, 노드가 제거되면 Pod도 같이 정리된다.  
+공식 개념 문서: Kubernetes DaemonSet 소개(Concepts) 참고.  
+(출처: Kubernetes 공식 문서)
+
+---
+
+## 1. DaemonSet이 필요한 이유
+
+Kubernetes에서 일반적인 애플리케이션은 **Deployment** 로 운영하며, “Pod N개”를 스케일하고 스케줄러가 적절한 노드에 분산 배치한다.
+
+반면, DaemonSet은 “스케일 수”를 맞추는 목적이 아니라, **노드마다 반드시 존재해야 하는 에이전트/데몬**을 배치하기 위해 존재한다.
+
+예를 들어:
+- 노드의 로그 파일 / 컨테이너 로그를 수집
+- 노드의 CPU/메모리/디스크/네트워크 메트릭을 수집
+- 보안/감사/침입 탐지 에이전트 실행
+- 노드별 네트워크/스토리지 관련 구성 요소 실행
+
+---
+
+## 2. Deployment vs DaemonSet 차이
+
+### Deployment
+- “Pod N개”를 원하는 만큼 생성
+- 스케줄러가 적절한 노드에 분산 배치
+- 서비스 트래픽을 받는 일반 앱(웹, API 서버 등)에 적합
+
+### DaemonSet
+- “노드 1대당 Pod 1개”가 기본 원칙
+- 노드가 늘면 Pod도 자동으로 늘어남
+- 노드가 줄면 Pod도 자동으로 줄어듦
+- 노드별 에이전트/데몬에 적합
+
+---
+
+## 3. `kubectl drain` 할 때 DaemonSet Pod 때문에 막히는 이유
+
+`kubectl drain <node>` 는 해당 노드의 Pod를 다른 노드로 “비우는” 작업이다.
+
+그런데 DaemonSet Pod는 “노드마다 항상 있어야 하는 것”이므로,
+기본적으로 drain은 DaemonSet-managed Pod를 강제로 삭제하지 않도록 막는다.
+
+그래서 이런 메시지가 흔히 보인다:
+
+- `cannot delete DaemonSet-managed Pods ...`
+
+실무에서는 보통 다음 옵션을 함께 쓴다:
+
+- `kubectl drain <node> --ignore-daemonsets`
+
+> 참고: DaemonSet Pod는 “원래 해당 노드에 있어야 하는” 성격이라  
+> drain 시에는 “무시”하는 게 일반적이다(다만 운영 정책에 따라 예외가 있을 수 있음).
+
+---
+
+## 4. 모든 노드가 아니라 “일부 노드에만” 배치하는 방법
+
+DaemonSet은 기본적으로 “모든 노드” 대상이지만, 다음 조건으로 제한할 수 있다:
+
+- `nodeSelector` : 특정 라벨 가진 노드에만 배치
+- `nodeAffinity` : 더 복잡한 조건 기반 배치
+- `tolerations` : taint가 걸린 노드(control-plane 등)에도 배치할지 결정
+
+예:
+- “워크 노드에만 설치”
+- “GPU 노드에만 설치”
+- “control-plane에도 에이전트를 올리기”
+
+---
+
+## 5. DaemonSet 업데이트 전략
+
+DaemonSet도 업데이트 방식이 있다(주로 2개).
+
+### RollingUpdate (일반적으로 많이 사용)
+- 템플릿 변경 시 노드들을 순차적으로 업데이트
+- 기존 Pod를 교체하며 점진적으로 반영
+
+### OnDelete
+- 템플릿을 바꿔도 기존 Pod는 그대로 유지
+- 운영자가 Pod를 직접 삭제할 때만 새 템플릿으로 재생성
+
+> 운영 환경에서는 “에이전트가 동시에 모두 내려가는 상황”을 피하기 위해  
+> RollingUpdate 전략과 업데이트 속도 조절이 중요하다.
+
+---
+
+## 6. 가장 단순한 DaemonSet YAML 뼈대
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-agent
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: node-agent
+  template:
+    metadata:
+      labels:
+        app: node-agent
+    spec:
+      containers:
+        - name: agent
+          image: your-image:latest
+
+
+---
+---
+# Kubernetes Headless Service 정리
+
+## 1) Headless Service란?
+
+**Headless Service**는 Kubernetes Service의 한 형태로,  
+일반 Service처럼 **클러스터 내부 가상 IP(ClusterIP)를 만들지 않고**,  
+대신 **Service가 선택한 Pod들의 IP 목록을 DNS로 그대로 반환**하도록 하는 Service다.
+
+- 핵심 설정: `spec.clusterIP: None`
+
+> 참고(공식 문서)  
+> - Service 개념: https://kubernetes.io/docs/concepts/services-networking/service/  
+> - DNS for Services/Pods: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+
+---
+
+## 2) 일반 Service(ClusterIP) vs Headless Service 차이
+
+### 일반 Service (ClusterIP 있음)
+- Service DNS를 조회하면 **Service의 ClusterIP 1개**가 나온다.
+- 트래픽은 kube-proxy(iptables/ipvs) 규칙을 통해 **뒤의 Pod들로 로드밸런싱**된다.
+- 클라이언트 입장에서는 “하나의 Service IP로 접속”하면 됨.
+
+### Headless Service (ClusterIP: None)
+- Service DNS를 조회하면 **Pod들의 IP가 여러 개(A/AAAA 레코드 여러 개)** 로 반환된다.
+- Service가 “가상 IP로 프록시/로드밸런싱”을 하지 않고,
+  클라이언트가 **직접 Pod IP로 접속**하는 형태가 된다.
+- 주로 **Pod 개별 식별이 중요한 워크로드**에 사용된다.
+
+---
+
+## 3) 언제 쓰나? (대표 사용 사례)
+
+### StatefulSet과 함께 (가장 흔한 사용)
+StatefulSet은 `app-0`, `app-1` 처럼 Pod마다 **고정된 이름/정체성**이 중요하다.  
+Headless Service를 사용하면 각 Pod에 **예측 가능한 DNS**로 접근 가능해진다.
+
+예시 접근 형태:
+- `web-0.web-headless.<namespace>.svc.cluster.local`
+- `web-1.web-headless.<namespace>.svc.cluster.local`
+
+이 패턴은 다음 상황에서 유리하다:
+- DB 클러스터(Primary/Replica) 구성
+- 분산 시스템의 멤버 간 직접 통신
+- 특정 인스턴스(리더/팔로워 등)에 정확히 붙어야 하는 서비스
+
+> 참고(공식 문서)  
+> - StatefulSet 개념: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+
+---
+
+## 4) Headless Service YAML 예시
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-headless
+  namespace: demo
+spec:
+  clusterIP: None         # Headless의 핵심
+  selector:
+    app: web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+
+---
+
+
+
 - EKS 클러스터에서 AWS X-Ray와 마이크로서비스 네트워크 설계 이해
 - AWS X-Ray의 Service Map, Traces, Segments 이해
 
