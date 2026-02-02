@@ -245,26 +245,163 @@ spec:
 ```
 # 워커 노드 IAM 역할 ARN 확인
 kubectl -n kube-system describe configmap aws-auth
+```
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl -n kube-system describe configmap aws-auth
+E0203 06:15:01.309021    8128 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://kubernetes.docker.internal:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+E0203 06:15:01.310763    8128 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://kubernetes.docker.internal:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+E0203 06:15:01.312222    8128 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://kubernetes.docker.internal:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+E0203 06:15:01.313814    8128 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://kubernetes.docker.internal:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+E0203 06:15:01.315258    8128 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://kubernetes.docker.internal:6443/api?timeout=32s\": dial tcp 127.0.0.1:6443: connect: connection refused"
+The connection to the server kubernetes.docker.internal:6443 was refused - did you specify the right host or port?
+```
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ aws sts get-caller-identity
+aws configure get region
+
+aws eks list-clusters --region ap-northeast-2
+aws eks update-kubeconfig --region ap-northeast-2 --name eksdemo1
+```
+---
+```
+{
+    "UserId": "AIDARIBXLWVE6SSOENPWT",
+    "Account": "086015456585",
+    "Arn": "arn:aws:iam::086015456585:user/devuser"
+}
+ap-northeast-2
+{
+    "clusters": [
+        "eksdemo1"
+    ]
+}
+Added new context arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1 to /home/kimdy/.kube/config
+```
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl config get-contexts
+kubectl config use-context arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1
+```
+---
+```
+CURRENT   NAME                                                       CLUSTER                                                    AUTHINFO                                                   NAMESPACE
+*         arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1   arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1   arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1   
+          docker-desktop                                             docker-desktop                                             docker-desktop                                             
+Switched to context "arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1".
+```
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl config view --minify | egrep "current-context:|server:|name:"
+kubectl get nodes
+    server: https://346264711D0B5AAC4717CFF57E3D0C45.gr7.ap-northeast-2.eks.amazonaws.com
+  name: arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1
+  name: arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1
+current-context: arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1
+- name: arn:aws:eks:ap-northeast-2:086015456585:cluster/eksdemo1
+NAME                                               STATUS   ROLES    AGE   VERSION
+ip-192-168-0-101.ap-northeast-2.compute.internal   Ready    <none>   12h   v1.32.9-eks-ecaa3a6
+ip-192-168-60-15.ap-northeast-2.compute.internal   Ready    <none>   12h   v1.32.9-eks-ecaa3a6
+```
+
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl -n kube-system describe configmap aws-auth
+Name:         aws-auth
+Namespace:    kube-system
+Labels:       <none>
+Annotations:  <none>
+
+Data
+====
+mapRoles:
+----
+- rolearn: arn:aws:iam::086015456585:role/eksctl-eksdemo1-nodegroup-eksdemo1-NodeInstanceRole-BOxQqYiPVBTa
+  groups:
+  - system:bootstrappers
+  - system:nodes
+  username: system:node:{{EC2PrivateDNSName}}
+
+
+
+BinaryData
+====
+
+Events:  <none>
+```
+---
+
+```
 
 # 출력에서 rolearn 확인
-rolearn: arn:aws:iam::180789647333:role/eksctl-eksdemo1-nodegroup-eksdemo-NodeInstanceRole-IJN07ZKXAWNN
+rolearn: arn:aws:iam::086015456585:role/eksctl-eksdemo1-nodegroup-eksdemo1-NodeInstanceRole-BOxQqYiPVBTa
+
 ```
 - Services -> IAM -> Roles 이동
 - **eksctl-eksdemo1-nodegroup** 이름의 역할 검색 후 열기
+
+![alt text](image.png)
+
 - **Permissions** 탭 클릭
 - **Attach Policies** 클릭
-- **Amazon_EBS_CSI_Driver**를 검색해 **Attach Policy** 클릭
+
+![alt text](image-1.png)
+
+- **AmazonEBS**를 검색해 **Attach Policy** 클릭
+
+![alt text](image-2.png)
 
 ## Step-04: Amazon EBS CSI 드라이버 배포
 - kubectl 버전이 1.14 이상인지 확인
 ```
-kubectl version --client --short
+kubectl version --client
+
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl version --client
+Client Version: v1.35.0
+Kustomize Version: v5.7.1
 ```
 - Amazon EBS CSI 드라이버 배포
-```
+
 # EBS CSI 드라이버 배포
-kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+# 1) kustomize 결과를 파일로 뽑고
+### Kustomize는 쿠버네티스 매니페스트(YAML)를 “템플릿 없이” 환경별로 변형/조합해서 최종 YAML을 만들어 주는 도구
+
+```
+kubectl kustomize "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master" > ebs.yaml
+```
+
+# 2) 문제 필드 제거 (그냥 한 줄 삭제)
+```
+sed -i '/nodeAllocatableUpdatePeriodSeconds/d' ebs.yaml
+```
+# 3) 다시 적용
+```
+kubectl apply -f ebs.yaml
+```
+
+kubectl get csidriver | grep ebs
+kubectl -n kube-system get pods -l app=ebs-csi-controller
+kubectl -n kube-system get pods -l app=ebs-csi-node
+
 
 # ebs-csi 파드 실행 확인
 kubectl get pods -n kube-system
+```
+---
+```
+kimdy@DESKTOP-CLQV18N:~/Eks-Class$ kubectl get pods -n kube-system
+NAME                                  READY   STATUS    RESTARTS   AGE
+aws-node-5wnfz                        2/2     Running   0          13h
+aws-node-rqm2l                        2/2     Running   0          13h
+coredns-844d8f59bb-j9dnn              1/1     Running   0          13h
+coredns-844d8f59bb-ml8xv              1/1     Running   0          13h
+ebs-csi-controller-65697479cb-67l2c   6/6     Running   0          2m42s
+ebs-csi-controller-65697479cb-s9tpz   6/6     Running   0          2m42s
+ebs-csi-node-5hl26                    3/3     Running   0          2m41s
+ebs-csi-node-tvzpg                    3/3     Running   0          2m41s
+kube-proxy-9b6wb                      1/1     Running   0          13h
+kube-proxy-fsz28                      1/1     Running   0          13h
+metrics-server-6d994b8776-6gdx6       1/1     Running   0          13h
+metrics-server-6d994b8776-7nzkr       1/1     Running   0          13h
 ```

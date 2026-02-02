@@ -1,0 +1,168 @@
+<mxfile host="app.diagrams.net" modified="2026-02-03T00:00:00.000Z" agent="GPT" version="24.7.12" type="device">
+  <diagram id="aws-eks-arch-fallback" name="AWS EKS Architecture (Fallback)">
+    <mxGraphModel dx="1400" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="t1" value="AWS EKS 기반 서비스 아키텍처 (Fallback: 아이콘 없이 라벨로 표시)" style="text;html=1;align=center;verticalAlign=middle;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="180" y="20" width="1560" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Common styles: rounded boxes -->
+        <!-- VPC -->
+        <mxCell id="vpc" value="VPC" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;dashed=1;fillColor=#ffffff" vertex="1" parent="1">
+          <mxGeometry x="220" y="90" width="1500" height="860" as="geometry"/>
+        </mxCell>
+
+        <!-- Public Subnet -->
+        <mxCell id="pub" value="Public Subnet" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f7f7f7" vertex="1" parent="vpc">
+          <mxGeometry x="40" y="70" width="1420" height="250" as="geometry"/>
+        </mxCell>
+
+        <!-- Private Subnet -->
+        <mxCell id="pri" value="Private Subnet" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#f7f7f7" vertex="1" parent="vpc">
+          <mxGeometry x="40" y="350" width="1420" height="470" as="geometry"/>
+        </mxCell>
+
+        <!-- Left: Route53 + ACM -->
+        <mxCell id="r53" value="Route 53" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="140" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="acm" value="Certificate Manager (ACM)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="220" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Public: ALB/NLB/CLB -->
+        <mxCell id="alb" value="ALB" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pub">
+          <mxGeometry x="240" y="70" width="120" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nlb" value="NLB" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pub">
+          <mxGeometry x="390" y="70" width="120" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="clb" value="CLB" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pub">
+          <mxGeometry x="540" y="70" width="120" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Private: EKS -->
+        <mxCell id="eks" value="Amazon EKS Cluster" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pri">
+          <mxGeometry x="240" y="110" width="200" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Workloads -->
+        <mxCell id="workloads" value="Workloads&#10;(Pods / Services / Ingress)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=left;verticalAlign=top;fontStyle=1" vertex="1" parent="pri">
+          <mxGeometry x="470" y="70" width="520" height="260" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="fargate" value="Fargate (Serverless)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="workloads">
+          <mxGeometry x="30" y="70" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ebs" value="EBS (PV/PVC)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="workloads">
+          <mxGeometry x="30" y="140" width="200" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- Right: ECR/RDS -->
+        <mxCell id="ecr" value="ECR" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pri">
+          <mxGeometry x="1040" y="120" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rds" value="RDS MySQL" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle;fontStyle=1" vertex="1" parent="pri">
+          <mxGeometry x="1220" y="120" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Observability -->
+        <mxCell id="cw" value="CloudWatch&#10;(Container Insights / Logs / Alarms)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="pri">
+          <mxGeometry x="1040" y="220" width="340" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="xray" value="X-Ray" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="pri">
+          <mxGeometry x="1040" y="310" width="340" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Dev Tools -->
+        <mxCell id="devbox" value="AWS Developer Tools (CI/CD)" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=left;verticalAlign=top;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="60" y="420" width="170" height="280" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cc" value="CodeCommit" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="devbox">
+          <mxGeometry x="15" y="45" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cb" value="CodeBuild" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="devbox">
+          <mxGeometry x="15" y="115" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cp" value="CodePipeline" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=center;verticalAlign=middle" vertex="1" parent="devbox">
+          <mxGeometry x="15" y="185" width="140" height="55" as="geometry"/>
+        </mxCell>
+
+        <!-- eksctl note -->
+        <mxCell id="eksctl" value="eksctl (EKS CLI)&#10;- cluster/nodegroup/addon&#10;- update-kubeconfig" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=#ffffff;align=left;verticalAlign=middle" vertex="1" parent="1">
+          <mxGeometry x="60" y="730" width="170" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e1" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="r53" target="alb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="acm" target="alb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e3" value="Ingress" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="vpc" source="alb" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e4" value="옵션: Service type=LoadBalancer" style="endArrow=block;html=1;strokeWidth=2;dashed=1;" edge="1" parent="vpc" source="nlb" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e5" value="레거시/옵션" style="endArrow=block;html=1;strokeWidth=2;dashed=1;" edge="1" parent="vpc" source="clb" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e6" value="Source" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="cc" target="cb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e7" value="Build" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="cb" target="cp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e8" value="Deploy (Images)" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="1" source="cp" target="ecr">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e9" value="Pull Image" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="vpc" source="ecr" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e10" value="App ↔ DB" style="endArrow=block;startArrow=block;html=1;strokeWidth=2;" edge="1" parent="pri" source="workloads" target="rds">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e11" value="Metrics/Logs/Alarms" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="pri" source="eks" target="cw">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e12" value="Tracing" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="pri" source="workloads" target="xray">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e13" value="PV Storage" style="endArrow=block;html=1;strokeWidth=2;" edge="1" parent="workloads" source="ebs" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e14" value="Serverless Pods" style="endArrow=block;html=1;strokeWidth=2;dashed=1;" edge="1" parent="workloads" source="fargate" target="eks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

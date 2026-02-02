@@ -118,10 +118,159 @@ brew install weaveworks/tap/eksctl
 eksctl version
 ```
 
-### Step-03-02: Windows 또는 Linux에서 eksctl 설치
-- Windows 및 Linux OS는 아래 문서를 참고하세요.
-- **참고:** https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html#installing-eksctl
+---
+# WSL Ubuntu에서 `kubectl` / `eksctl` 설치 & EKS 연결 가이드
 
+현재 메시지:
+- `kubectl: command not found`
+- `eksctl: command not found`
 
-## 참고 자료
-- https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html
+즉, **WSL(우분투) 환경에 `kubectl` / `eksctl`이 설치되어 있지 않아서** 발생한 상황입니다.  
+아래 순서대로 진행하면 **설치 → 버전 확인 → AWS 자격증명/리전 확인 → EKS kubeconfig 연결**까지 한 번에 됩니다.
+
+---
+
+## 1) 필수 패키지 업데이트
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl unzip gnupg
+```
+
+---
+
+## 2) `kubectl` 설치 (권장: 공식 바이너리)
+
+> `snap`으로도 설치 가능하지만, 실무에서는 공식 바이너리가 깔끔합니다.
+
+```bash
+# kubectl 최신 stable 다운로드
+curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+# checksum 검증(권장)
+curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+
+# 설치
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# 확인
+kubectl version --client --output=yaml
+```
+
+---
+
+## 3) `eksctl` 설치 (공식 릴리즈 바이너리)
+
+```bash
+# 다운로드 & 설치
+curl --silent --location "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" \
+  | tar xz -C /tmp
+
+sudo install -o root -g root -m 0755 /tmp/eksctl /usr/local/bin/eksctl
+
+# 확인
+eksctl version
+```
+
+---
+
+## 4) AWS CLI 설치/확인 (이미 있다면 스킵)
+
+```bash
+aws --version || true
+```
+
+만약 없다면:
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+unzip -q /tmp/awscliv2.zip -d /tmp
+sudo /tmp/aws/install
+aws --version
+```
+
+---
+
+## 5) AWS 자격증명 + 리전 확인
+
+```bash
+aws sts get-caller-identity
+aws configure list
+aws configure get region
+```
+
+리전이 비어있으면(예: 서울 `ap-northeast-2`):
+
+```bash
+aws configure set region ap-northeast-2
+```
+
+---
+
+## 6) EKS 클러스터 목록 확인
+
+```bash
+eksctl get cluster --region ap-northeast-2
+# 또는
+aws eks list-clusters --region ap-northeast-2
+```
+
+---
+
+## 7) kubeconfig 연결 (EKS 접속 준비)
+
+클러스터 이름을 `MYCLUSTER`로 바꿔서 실행:
+
+```bash
+aws eks update-kubeconfig --region ap-northeast-2 --name MYCLUSTER
+kubectl get nodes
+```
+
+---
+
+# 자주 막히는 포인트 3개 (빠른 체크)
+
+## A) PATH 문제
+
+```bash
+which kubectl && which eksctl && echo $PATH
+```
+
+- 둘 다 `/usr/local/bin/...` 로 나오면 정상입니다.
+
+## B) 권한(AccessDenied) 문제
+
+`aws sts get-caller-identity`는 되는데 EKS 조회가 안 되면, IAM 정책에 아래 액션들이 없을 수 있습니다:
+
+- `eks:DescribeCluster`
+- `eks:ListClusters`
+
+## C) “kubeconfig는 됐는데 kubectl이 접근 못함”
+
+```bash
+kubectl config current-context
+kubectl cluster-info
+```
+
+---
+
+# 원인 파악용 출력(민감정보 없음)
+
+아래 6줄 출력만 공유하면, 어디서 막혔는지 빠르게 좁힐 수 있습니다.
+
+```bash
+uname -a
+lsb_release -a 2>/dev/null || cat /etc/os-release
+echo $PATH
+which aws && aws --version
+which kubectl && kubectl version --client --short
+which eksctl && eksctl version
+```
+---
+
+### EKS Guide URL
+
+https://aws.amazon.com/blogs/containers/saas-deployment-architectures-with-amazon-eks/
+
+https://aws.amazon.com/blogs/architecture/field-notes-managing-an-amazon-eks-cluster-using-aws-cdk-and-cloud-resource-property-manager/
