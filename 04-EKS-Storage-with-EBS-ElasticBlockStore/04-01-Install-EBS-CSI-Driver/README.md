@@ -1,5 +1,8 @@
 # EBS(Elastic Block Store)로 EKS 스토리지 구성
 
+<img width="1594" height="475" alt="image" src="https://github.com/user-attachments/assets/5072c556-701a-4ee4-b2d9-e661bea7667b" />
+
+
 ## Step-01: 소개
 - EBS용 IAM 정책 생성
 - 워커 노드 IAM 역할에 IAM 정책 연결
