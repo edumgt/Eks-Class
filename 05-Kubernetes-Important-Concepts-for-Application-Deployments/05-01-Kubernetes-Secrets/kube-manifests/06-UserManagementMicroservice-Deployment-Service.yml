@@ -4,6 +4,7 @@ metadata:
   name: usermgmt-microservice
   labels:
     app: usermgmt-restapp
+    test: test1
 spec:
   replicas: 1
   selector:
@@ -14,6 +15,7 @@ spec:
       labels: 
         app: usermgmt-restapp
     spec:
+      
       containers:
         - name: usermgmt-restapp
           image: stacksimplify/kube-usermanagement-microservice:1.0.0

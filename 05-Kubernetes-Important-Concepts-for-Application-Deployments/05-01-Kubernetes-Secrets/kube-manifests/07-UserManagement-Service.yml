@@ -4,6 +4,7 @@ metadata:
   name: usermgmt-restapp-service
   labels: 
     app: usermgmt-restapp
+    test: test1
 spec:
   type: NodePort
   selector:
@@ -12,3 +13,4 @@ spec:
     - port: 8095
       targetPort: 8095
       nodePort: 31231
+  
