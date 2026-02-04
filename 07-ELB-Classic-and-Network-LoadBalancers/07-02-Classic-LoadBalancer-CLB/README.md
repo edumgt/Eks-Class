@@ -65,6 +65,92 @@ kubectl get svc
 # 파드 확인
 kubectl get pods
 ```
+---
+# kubectl apply 결과가 eksdemo1 / eksdemo2 중 어디에 적용됐는지 확인하기
+
+`kubectl apply -f kube-manifests/` 실행 결과로 리소스가 생성되었을 때, **어느 EKS 클러스터(eksdemo1 / eksdemo2)에 적용됐는지**는 전적으로 그 순간 `kubectl`이 사용한 **현재 컨텍스트(current-context)** 로 결정된다.
+
+---
+
+## 1) 가장 빠른 확인: current-context 확인
+
+```bash
+kubectl config current-context
+kubectl config get-contexts
+```
+
+- `kubectl config get-contexts` 출력에서 `*` 표시된 항목이 **현재 사용 중인 컨텍스트**
+- 그 컨텍스트가 가리키는 클러스터에 `apply`가 수행됨
+
+---
+
+## 2) 현재 컨텍스트가 실제로 바라보는 클러스터(엔드포인트) 확인
+
+```bash
+kubectl config view --minify
+kubectl cluster-info
+```
+
+- `kubectl cluster-info` 에서 나오는 Kubernetes control plane 주소(API server endpoint)가
+  현재 `kubectl`이 붙어있는 클러스터의 주소
+
+---
+
+## 3) 가장 확실한 방법: 두 클러스터에 각각 조회해보기 (--context)
+
+먼저 컨텍스트 이름을 확인:
+
+```bash
+kubectl config get-contexts
+```
+
+예를 들어 컨텍스트 이름이 `eksdemo1`, `eksdemo2` 라면 아래처럼 **각각 조회**한다.
+
+```bash
+kubectl get svc    --context eksdemo1
+kubectl get deploy  --context eksdemo1
+kubectl get secret  --context eksdemo1
+
+kubectl get svc    --context eksdemo2
+kubectl get deploy  --context eksdemo2
+kubectl get secret  --context eksdemo2
+```
+
+방금 생성된 리소스 목록(예시):
+
+- `service/mysql`
+- `deployment.apps/usermgmt-microservice`
+- `secret/mysql-db-password`
+- `service/clb-usermgmt-restapp`
+
+➡️ 위 리소스가 **보이는 쪽 클러스터가 설치(적용)된 클러스터**다.
+
+---
+
+## 4) 헷갈릴 수 있는 원인 체크
+
+### 4-1) KUBECONFIG 환경변수로 여러 kubeconfig를 쓰는 경우
+```bash
+echo $KUBECONFIG
+```
+- 여러 설정 파일을 쓰면, 의도치 않은 컨텍스트가 선택되어 있을 수 있음
+
+### 4-2) aws eks update-kubeconfig 를 마지막에 실행한 클러스터가 current-context가 되는 경우
+예:
+```bash
+aws eks update-kubeconfig --region ap-northeast-2 --name eksdemo2
+```
+- 위를 마지막에 실행했다면 current-context가 eksdemo2로 바뀌어 apply가 eksdemo2에 들어갔을 가능성이 큼
+
+---
+
+## 5) 결론
+
+- **정답:** `kubectl apply` 가 적용된 클러스터는 **apply 실행 당시의 current-context가 가리키는 클러스터**
+- 가장 확실한 검증은 `--context`로 **eksdemo1 / eksdemo2에 각각 조회해서 리소스가 존재하는지 확인**하는 것
+
+---
+
 
 ## 단계-02: 배포 확인
 - 새로운 CLB가 생성되었는지 확인
