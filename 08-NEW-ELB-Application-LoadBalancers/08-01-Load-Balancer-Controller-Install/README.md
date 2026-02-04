@@ -186,7 +186,7 @@ Kalyans-MacBook-Pro:08-01-Load-Balancer-Controller-Install kdaida$
 - 다음 단계에서 IAM Role을 만들 때 사용하므로 Policy ARN을 기록합니다.
 ```t
 # Policy ARN
-Policy ARN:  arn:aws:iam::180789647333:policy/AWSLoadBalancerControllerIAMPolicy
+Policy ARN:  arn:aws:iam::086015456585:policy/AWSLoadBalancerControllerIAMPolicy
 ```
 
 

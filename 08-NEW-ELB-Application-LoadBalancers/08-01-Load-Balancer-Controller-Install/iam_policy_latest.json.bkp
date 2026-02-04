@@ -29,9 +29,6 @@
                 "ec2:DescribeTags",
                 "ec2:GetCoipPoolUsage",
                 "ec2:DescribeCoipPools",
-                "ec2:GetSecurityGroupsForVpc",
-                "ec2:DescribeIpamPools",
-                "ec2:DescribeRouteTables",
                 "elasticloadbalancing:DescribeLoadBalancers",
                 "elasticloadbalancing:DescribeLoadBalancerAttributes",
                 "elasticloadbalancing:DescribeListeners",
@@ -41,10 +38,7 @@
                 "elasticloadbalancing:DescribeTargetGroups",
                 "elasticloadbalancing:DescribeTargetGroupAttributes",
                 "elasticloadbalancing:DescribeTargetHealth",
-                "elasticloadbalancing:DescribeTags",
-                "elasticloadbalancing:DescribeTrustStores",
-                "elasticloadbalancing:DescribeListenerAttributes",
-                "elasticloadbalancing:DescribeCapacityReservation"
+                "elasticloadbalancing:DescribeTags"
             ],
             "Resource": "*"
         },
@@ -193,37 +187,12 @@
                 "elasticloadbalancing:DeleteLoadBalancer",
                 "elasticloadbalancing:ModifyTargetGroup",
                 "elasticloadbalancing:ModifyTargetGroupAttributes",
-                "elasticloadbalancing:DeleteTargetGroup",
-                "elasticloadbalancing:ModifyListenerAttributes",
-                "elasticloadbalancing:ModifyCapacityReservation",
-                "elasticloadbalancing:ModifyIpPools"
+                "elasticloadbalancing:DeleteTargetGroup"
             ],
             "Resource": "*",
             "Condition": {
                 "Null": {
                     "aws:ResourceTag/elbv2.k8s.aws/cluster": "false"
-                }
-            }
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "elasticloadbalancing:AddTags"
-            ],
-            "Resource": [
-                "arn:aws:elasticloadbalancing:*:*:targetgroup/*/*",
-                "arn:aws:elasticloadbalancing:*:*:loadbalancer/net/*/*",
-                "arn:aws:elasticloadbalancing:*:*:loadbalancer/app/*/*"
-            ],
-            "Condition": {
-                "StringEquals": {
-                    "elasticloadbalancing:CreateAction": [
-                        "CreateTargetGroup",
-                        "CreateLoadBalancer"
-                    ]
-                },
-                "Null": {
-                    "aws:RequestTag/elbv2.k8s.aws/cluster": "false"
                 }
             }
         },
@@ -242,8 +211,7 @@
                 "elasticloadbalancing:ModifyListener",
                 "elasticloadbalancing:AddListenerCertificates",
                 "elasticloadbalancing:RemoveListenerCertificates",
-                "elasticloadbalancing:ModifyRule",
-                "elasticloadbalancing:SetRulePriorities"
+                "elasticloadbalancing:ModifyRule"
             ],
             "Resource": "*"
         }
