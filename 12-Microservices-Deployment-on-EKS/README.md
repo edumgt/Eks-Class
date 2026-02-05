@@ -72,6 +72,76 @@ aws sesv2 create-email-identity \
   --region "$REGION" \
   --email-identity "no-reply@example.com"
 ```
+---
+```
+지금 결과는 “생성은 됐지만 아직 검증(Verified)이 안 끝난 상태”예요. 바로 확인/검증 진행 방법과, 다음 단계(IAM+SMTP)로 넘어가기 위한 체크 명령들을 정리해서 안내할게요.
+
+지금 출력은 정상이에요. **SES에 이메일 아이덴티티가 “등록은 됐지만(VerifiedForSendingStatus=false) 아직 검증 링크를 클릭해서 승인되지 않은 상태”**라는 뜻입니다.
+
+아래 순서대로 하면 바로 다음 단계로 넘어갈 수 있어요.
+
+1) 검증 상태 확인 (CLI)
+REGION=ap-northeast-2
+aws sesv2 get-email-identity \
+  --region "$REGION" \
+  --email-identity "kimdypm@gmail.com"
+
+
+여기서 VerifiedForSendingStatus 가 true로 바뀌면 검증 완료입니다.
+
+2) 해야 할 일: Gmail 받은편지함에서 “Amazon SES verification” 메일 찾기
+
+create-email-identity 실행하면 Gmail로 검증 메일이 갑니다.
+
+메일 안의 verification link를 클릭해야 VerifiedForSendingStatus=true로 바뀝니다.
+
+만약 메일이 안 오면
+
+스팸함 확인
+
+Gmail “프로모션” 탭 확인
+
+5~10분 뒤 다시 확인 (SES 쪽에서 지연되는 경우가 종종 있음)
+
+3) (중요) ap-northeast-2에서 SES가 SMTP/발송 지원 리전인지 확인
+
+리전에 따라 SES 이메일 전송/SMTP 지원 여부가 달라질 수 있어서, 아래로 리전 지원 상태를 확인하세요.
+
+aws sesv2 get-account --region "$REGION"
+
+
+여기서 “SendingEnabled” 류 정보(계정 송신 가능 여부)가 확인됩니다.
+
+만약 리전 이슈가 있으면, 보통 us-east-1 같은 SES 메인 리전으로 진행하는 게 빠릅니다.
+
+4) 다음 단계 미리 점검: 샌드박스인지 확인
+
+샌드박스면 “검증된 주소로만” 보낼 수 있습니다.
+
+aws ses get-send-quota --region "$REGION"
+
+
+Max24HourSend, MaxSendRate, SentLast24Hours 확인
+
+샌드박스 해제는 보통 Support Case(콘솔)로 진행합니다.
+
+5) 검증 완료 후에 할 일(요약)
+
+검증이 true로 바뀌면, 그 다음은:
+
+IAM 유저 생성 + ses:SendRawEmail 권한 부여
+
+AccessKey 생성
+
+SecretAccessKey → SMTP Password(v4) 변환
+
+서버 설정
+
+SMTP 서버: email-smtp.<region>.amazonaws.com
+
+포트: 587(STARTTLS) 또는 465(TLS)
+```
+---
 
 - 해당 이메일로 검증 메일이 발송됩니다. 링크 클릭 시 검증 완료.
 
