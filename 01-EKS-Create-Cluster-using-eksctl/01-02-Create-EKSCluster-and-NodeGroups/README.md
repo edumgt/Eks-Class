@@ -55,13 +55,13 @@ eksctl utils associate-iam-oidc-provider \
 - 이 애드온들은 노드 그룹 역할에 필요한 IAM 정책을 자동으로 생성해 줍니다.
 ```
 # 퍼블릭 노드 그룹 생성
-eksctl create nodegroup --cluster=eksdemo1 \
-                        --region=us-east-1 \
-                        --name=eksdemo1-ng-public1 \
+eksctl create nodegroup --cluster=eksdemo3 \
+                        --region=ap-northeast-2 \
+                        --name=eksdemo3-ng-public4 \
                         --node-type=t3.medium \
-                        --nodes=2 \
-                        --nodes-min=2 \
-                        --nodes-max=4 \
+                        --nodes=1 \
+                        --nodes-min=1 \
+                        --nodes-max=2 \
                         --node-volume-size=20 \
                         --ssh-access \
                         --ssh-public-key=kube-demo \
@@ -72,6 +72,24 @@ eksctl create nodegroup --cluster=eksdemo1 \
                         --appmesh-access \
                         --alb-ingress-access 
 ```
+---
+```
+2026-02-05 10:19:40 [ℹ]  1 error(s) occurred and nodegroups haven't been created properly, you may wish to check CloudFormation console
+2026-02-05 10:19:40 [ℹ]  to cleanup resources, run 'eksctl delete nodegroup --region=ap-northeast-2 --cluster=eksdemo3 --name=<name>' for each of the failed nodegroup
+2026-02-05 10:19:40 [✖]  waiter state transitioned to Failure
+Error: failed to create nodegroups for cluster "eksdemo3"
+```
+---
+![alt text](image.png)
+```
+위의 에러로 CloudFormation 에서 조회
+
+이 AWS::EKS::Nodegroup 리소스가 CREATE_FAILED 상태입니다
+
+Resource handler returned message: "Volume of size 10GB is smaller than snapshot 'snap-00d5f67a6dbba0b5f', expect size >= 20GB (Service: Eks, Status Code: 400, Request ID: 976c48ac-3ee4-4bc9-9e04-b9658090dc57) (SDK Attempt Count: 1)" (RequestToken: a0f38587-31f9-4ffe-18e4-9accbc11083b, HandlerErrorCode: InvalidRequest)
+```
+
+
 
 ## Step-05: 클러스터 및 노드 확인
 
